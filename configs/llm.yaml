@@ -1,0 +1,26 @@
+# LLM evaluation config (GPT-5 and Gemini 3)
+
+data_dir: "data/splits"
+
+prompt_variants: [zero_shot, few_shot, chain_of_thought]
+
+# Few-shot
+few_shot_examples_per_class: 2
+
+# Hard cost cap
+cost_cap_usd: 40.0
+
+gpt:
+  model: "gpt-5"
+  temperature: 0.0
+  max_tokens: 400
+  output_dir: "results/llm_logs/gpt5"
+  requests_per_minute: 60
+
+# Gemini 3
+gemini:
+  model: "gemini-3-flash"
+  temperature: 0.0
+  max_tokens: 400
+  output_dir: "results/llm_logs/gemini3"
+  requests_per_minute: 60

@@ -1,0 +1,23 @@
+run_name: "lstm"
+
+data_dir: "data/splits"
+max_vocab_size: 30000
+max_length: 128          # tweets + reddit posts are shorter than encoder max
+
+embedding_type: "glove"  # options: glove, fasttext, random
+glove_path: "data/glove.6B.300d.txt"   # download separately; see notebooks/03_lstm_run.ipynb
+embedding_dim: 300
+freeze_embeddings: false # fine-tune embeddings during training
+
+hidden_dim: 256
+num_layers: 2
+bidirectional: true
+dropout: 0.3
+
+batch_size: 64
+learning_rate: 1.0e-3
+num_epochs: 20
+early_stopping_patience: 3   # stop if val macro-F1 doesn't improve for 3 epochs
+seed: 42
+
+output_dir: "results/runs/lstm"
