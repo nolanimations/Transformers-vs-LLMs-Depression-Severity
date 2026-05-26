@@ -166,14 +166,14 @@ def train(cfg: dict) -> dict:
 
     # ── Train ─────────────────────────────────────────────────────────────────
     trainer = WeightedTrainer(
-        class_weights   = weights,
-        model           = model,
-        args            = training_args,
-        train_dataset   = train_ds,
-        eval_dataset    = val_ds,
-        tokenizer       = tokenizer,
-        data_collator   = data_collator,
-        compute_metrics = compute_metrics,
+        class_weights     = weights,
+        model             = model,
+        args              = training_args,
+        train_dataset     = train_ds,
+        eval_dataset      = val_ds,
+        processing_class  = tokenizer,  # renamed from `tokenizer` in transformers v5
+        data_collator     = data_collator,
+        compute_metrics   = compute_metrics,
     )
 
     log.info("Starting training ...")

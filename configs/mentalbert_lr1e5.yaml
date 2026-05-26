@@ -1,0 +1,20 @@
+model_name: "mental/mental-bert-base-uncased"
+run_name: "mentalbert_lr1e5"
+
+data_dir: "data/splits"
+max_length: 256
+
+batch_size: 16
+learning_rate: 1.0e-5
+num_epochs: 4
+weight_decay: 0.01
+warmup_ratio: 0.1
+fp16: true
+seed: 42
+
+output_dir: "results/runs/mentalbert_lr1e5"
+logging_steps: 50
+eval_strategy: "epoch"
+save_strategy: "epoch"
+load_best_model_at_end: true
+metric_for_best_model: "eval_macro_f1"
