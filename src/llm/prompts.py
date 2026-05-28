@@ -21,18 +21,19 @@ google_api_key = os.environ.get("GOOGLE_API_KEY")
 
 def build_prompt(variant: str, post: str, few_shot_examples=None) -> str:
     base_instruction = (
-        "Je bent een assistent die sociale media posts classificeert op ernst van depressie.\n"
-        "Kies één van de volgende labels:\n"
-        "- minimum: geen of minimale symptomen\n"
-        "- mild: milde symptomen, functioneert nog grotendeels normaal\n"
-        "- moderate: duidelijke symptomen, merkbaar verminderd functioneren\n"
-        "- severe: ernstige symptomen, significant lijden of disfunctioneren\n\n"
+        "You are an assistant that classifies social media posts based on the severity of depression symptoms.\n"
+        "Classify the following post into one of four categories based on the described symptoms:\n"
+        "Choose one label that best fits the symptoms described in the post:\n"
+        "- minimum: no or minimal symptoms\n"
+        "- mild: mild symptoms, still functions mostly normally\n"
+        "- moderate: clear symptoms, noticeably reduced functioning\n"
+        "- severe: severe symptoms, significant suffering or dysfunction\n\n"
     )
 
     if variant == "zero_shot":
         return (
             base_instruction +
-            'Geef je antwoord als JSON: {"label": "<keuze>"}\n\n'
+            'Provide your answer as JSON: {"label": "<choice>"}\n\n'
             f'Post: "{post}"'
         )
 
@@ -54,6 +55,7 @@ def build_prompt(variant: str, post: str, few_shot_examples=None) -> str:
             )
 
         examples_block = "\n\n".join(
+            
             f'Post: "{example["text"]}"\nLabel: "{example["label"]}"'
             for example in few_shot_examples
         )
@@ -62,15 +64,15 @@ def build_prompt(variant: str, post: str, few_shot_examples=None) -> str:
             return (
                 base_instruction +
                 f"{examples_block}\n\n"
-                'Geef je antwoord als JSON: {"label": "<keuze>"}\n\n'
+                'Provide your answer as JSON: {"label": "<choice>"}\n\n'
                 f'Post: "{post}"'
             )
 
         return (
             base_instruction +
             f"{examples_block}\n\n"
-            'Redeneer stap voor stap en geef daarna je antwoord als JSON:\n'
-            '{"reasoning": "<jouw redenering>", "label": "<keuze>"}\n\n'
+            'Please provide just your answer and provide it as JSON:\n'
+            '{"reasoning": "<your reasoning>", "label": "<choice>"}\n\n'
             f'Post: "{post}"'
         )
 

@@ -10,6 +10,7 @@ import json
 import os
 import re
 import time
+from google.genai import types
 
 from dotenv import load_dotenv
 from google import genai
@@ -83,6 +84,49 @@ def _safe_int(value, default=0) -> int:
         return default
 
 
+# def classify(prompt: str, config: dict) -> dict:
+#     """Classify a prompt using the Gemini 3 Flash model.
+
+#     Returns a standardized result dict with label, reasoning, token counts, and cost.
+#     """
+#     model = config.get("model")
+#     temperature = config.get("temperature", 0.0)
+#     max_tokens = config.get("max_tokens", 400)
+
+#     client = genai.Client(api_key=GOOGLE_API_KEY)
+#     chat = client.chats.create(
+#         model=model,
+#         config={"temperature": temperature, "max_output_tokens": max_tokens},
+#     )
+
+#     attempt = 0
+#     backoffs = [2, 4, 8]
+#     while True:
+#         try:
+#             response = chat.send_message(prompt)
+#             text = response.text or ""
+#             break
+#         except Exception:
+#             if attempt >= len(backoffs):
+#                 raise
+#             time.sleep(backoffs[attempt])
+#             attempt += 1
+
+#     label = text
+#     reasoning = _parse_reasoning(text)
+#     usage = getattr(response, "usage_metadata", None)
+#     prompt_tokens = _safe_int(getattr(usage, "prompt_token_count", None))
+#     completion_tokens = _safe_int(getattr(usage, "candidates_token_count", None))
+#     cost_usd = _estimate_cost(model, prompt_tokens, completion_tokens)
+
+#     return {
+#         "label": label,
+#         "reasoning": reasoning,
+#         "tokens_in": prompt_tokens,
+#         "tokens_out": completion_tokens,
+#         "cost_usd": cost_usd,
+#     }
+
 def classify(prompt: str, config: dict) -> dict:
     """Classify a prompt using the Gemini 3 Flash model.
 
@@ -93,26 +137,54 @@ def classify(prompt: str, config: dict) -> dict:
     max_tokens = config.get("max_tokens", 400)
 
     client = genai.Client(api_key=GOOGLE_API_KEY)
-    chat = client.chats.create(
-        model=model,
-        config={"temperature": temperature, "max_output_tokens": max_tokens},
-    )
 
-    attempt = 0
-    backoffs = [2, 4, 8]
-    while True:
-        try:
-            response = chat.send_message(prompt)
-            text = response.text or ""
-            break
-        except Exception:
-            if attempt >= len(backoffs):
-                raise
-            time.sleep(backoffs[attempt])
-            attempt += 1
+    # Ensure a model is set; default to a reasonable Gemini variant
+    model = model or "gemini-3.5-flash"
 
-    label = _parse_label(text)
-    reasoning = _parse_reasoning(text)
+    # Call generate_content with temperature and max_output_tokens forwarded
+    try:
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=temperature,
+                max_output_tokens=max_tokens,
+                thinking_config=types.ThinkingConfig(include_thoughts=True),
+            ),
+        )
+    except Exception:
+        # Let the caller handle network/SDK errors; raise after any cleanup if needed
+        raise
+    # chat = client.chats.create(
+    #     model=model,
+    #     config={"temperature": temperature, "max_output_tokens": max_tokens},
+    # )
+
+    # attempt = 0
+    # backoffs = [2, 4, 8]
+    # while True:
+    #     try:
+    #         response = chat.send_message(prompt)
+    #         text = response.text or ""
+    #         break
+    #     except Exception:
+    #         if attempt >= len(backoffs):
+    #             raise
+    #         time.sleep(backoffs[attempt])
+    #         attempt += 1
+    text = None
+    reasoning = None
+
+    for part in response.candidates[0].content.parts:
+        if not part.text:
+            continue
+        if part.thought:
+            reasoning = part.text
+        else:
+            text = part.text
+
+    label = _parse_label(text) if text else "unknown"
+    reasoning = reasoning.strip() if reasoning else None
     usage = getattr(response, "usage_metadata", None)
     prompt_tokens = _safe_int(getattr(usage, "prompt_token_count", None))
     completion_tokens = _safe_int(getattr(usage, "candidates_token_count", None))
@@ -124,4 +196,7 @@ def classify(prompt: str, config: dict) -> dict:
         "tokens_in": prompt_tokens,
         "tokens_out": completion_tokens,
         "cost_usd": cost_usd,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "model": model,
     }
