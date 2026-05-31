@@ -71,7 +71,7 @@ def build_prompt(variant: str, post: str, few_shot_examples=None) -> str:
         return (
             base_instruction +
             f"{examples_block}\n\n"
-            'Please provide just your answer and provide it as JSON:\n'
+            'Reason step by step and then provide your answer as JSON:\n'
             '{"reasoning": "<your reasoning>", "label": "<choice>"}\n\n'
             f'Post: "{post}"'
         )
