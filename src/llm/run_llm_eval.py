@@ -19,10 +19,14 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import yaml
 
 from src.data import load_splits
+from src.eval import evaluate
 from src.llm.prompts import build_prompt
+
+LABEL2ID = {"minimum": 0, "mild": 1, "moderate": 2, "severe": 3}
 
 try:
     from src.llm.gemini_client import classify as classify_gemini
@@ -100,6 +104,8 @@ def main():
 
     cumulative_cost = 0.0
     processed = 0
+    preds_list: list[int] = []
+    cost_cap_hit = False
 
     print(f"Running LLM eval: model={model_key} ({model_name}), variant={args.variant}, output={out_path}")
 
@@ -134,7 +140,7 @@ def main():
         last_exc = None
         while True:
             try:
-                res = classify_fn(prompt, config={"model": model_name, "temperature": temperature, "max_tokens": max_tokens, "timeout": 30})
+                res = classify_fn(prompt, config={"model": model_name, "temperature": temperature, "max_tokens": max_tokens, "timeout": 30, "variant": args.variant})
                 break
             except Exception as exc:
                 last_exc = exc
@@ -160,8 +166,11 @@ def main():
 
         cumulative_cost += cost_usd
 
+        pred_id = LABEL2ID.get(label, -1) if label else -1
+        preds_list.append(pred_id)
+
         record.update({
-            "label": label,
+            "pred_label": label,
             "reasoning": reasoning,
             "tokens_in": int(tokens_in or 0),
             "tokens_out": int(tokens_out or 0),
@@ -176,11 +185,30 @@ def main():
 
         if cumulative_cost >= cost_cap:
             print(f"Reached cost cap ${cost_cap:.2f}; stopping early.")
+            cost_cap_hit = True
             break
 
         time.sleep(sleep_between)
 
     print(f"Finished. Wrote {processed} records to {out_path}")
+
+    # ── Evaluate ──────────────────────────────────────────────────────────────
+    # Only run evaluate() on a complete pass (no --limit, no cost-cap hit)
+    full_run = (start == 0) and (args.limit is None or args.limit >= total) and not cost_cap_hit
+    if full_run and len(preds_list) == len(test_df):
+        run_name = f"{model_key}_{args.variant}"
+        runs_dir = Path("results/runs") / run_name
+        print(f"\nEvaluating {run_name} on full test set ...")
+        evaluate(
+            preds      = np.array(preds_list),
+            labels     = test_df["label_id"].values,
+            df         = test_df,
+            run_name   = run_name,
+            output_dir = str(runs_dir),
+            split      = "test",
+        )
+    else:
+        print(f"\nSkipping evaluate() — partial run (processed {processed}/{total}, cap_hit={cost_cap_hit}).")
 
 
 if __name__ == "__main__":

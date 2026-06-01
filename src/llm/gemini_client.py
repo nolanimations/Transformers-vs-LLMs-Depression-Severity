@@ -212,21 +212,25 @@ def classify(prompt: str, config: dict) -> dict:
         label: str = Field(description="The predicted label for the input post, one of 'minimum', 'mild', 'moderate', 'severe', or 'unknown' if parsing fails.")
         reasoning: Optional[str] = Field(description="The reasoning behind the predicted label, if available.")
 
-    # Call generate_content with temperature and max_output_tokens forwarded
+    # Only enable thinking for chain_of_thought — zero/few-shot don't need it
+    # and it wastes tokens (= cost) when unused
+    use_thinking = config.get("variant") == "chain_of_thought"
+    config_kwargs = dict(
+        temperature=temperature,
+        max_output_tokens=max_tokens,
+        response_mime_type="application/json",
+        response_schema=LabelResponse,
+    )
+    if use_thinking:
+        config_kwargs["thinking_config"] = types.ThinkingConfig(include_thoughts=True)
+
     try:
         response = client.models.generate_content(
             model=model,
             contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-                thinking_config=types.ThinkingConfig(include_thoughts=True),
-                response_mime_type="application/json",
-                response_schema=LabelResponse
-            ),
+            config=types.GenerateContentConfig(**config_kwargs),
         )
     except Exception:
-        # Let the caller handle network/SDK errors; raise after any cleanup if needed
         raise
     # chat = client.chats.create(
     #     model=model,
@@ -253,7 +257,7 @@ def classify(prompt: str, config: dict) -> dict:
     cost_usd = _estimate_cost(model, prompt_tokens, completion_tokens)
 
     return {
-        "label": response.text,
+        "label": label,          # parsed label string, e.g. "mild"
         "reasoning": reasoning,
         "tokens_in": prompt_tokens,
         "tokens_out": completion_tokens,

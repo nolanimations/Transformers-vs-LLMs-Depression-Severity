@@ -233,3 +233,4 @@ results/figures/
 
 # Environment variables (API keys etc.)
 .env
+data/glove.6B.300d.txt
