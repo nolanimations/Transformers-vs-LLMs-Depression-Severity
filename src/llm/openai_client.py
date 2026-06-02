@@ -67,8 +67,6 @@ def classify(prompt: str, config: dict) -> dict:
     model = config.get("model", "gpt-5")
     max_tokens = config.get("max_tokens", 400)
     
-    # Voor GPT-5/o-series laten we temperature weg (default 1.0)
-    # Voor andere modellen halen we het uit de config.
     temperature = config.get("temperature", 0.0)
 
     messages = [
@@ -84,7 +82,6 @@ def classify(prompt: str, config: dict) -> dict:
         "max_completion_tokens": max_tokens
     }
 
-    # Alleen temperature toevoegen als het GEEN GPT-5 of o1 model is
     if not any(m in model.lower() for m in ["gpt-5", "o1"]):
         api_params["temperature"] = temperature
 
