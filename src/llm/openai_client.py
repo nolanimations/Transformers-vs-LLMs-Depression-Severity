@@ -1,16 +1,7 @@
-"""
-GPT-5 API caller with exponential-backoff retries, JSON response parsing,
-and per-call cost + token logging.
-Reads OPENAI_API_KEY from .env.
-
-    from src.llm.openai_client import classify
-"""
-
 import json
 import os
 import re
 import time
-
 from dotenv import load_dotenv
 import openai
 
@@ -18,22 +9,21 @@ load_dotenv()
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 if OPENAI_API_KEY is None:
     raise EnvironmentError("OPENAI_API_KEY is not set in the environment")
-openai.api_key = OPENAI_API_KEY
+
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 LABELS = {"minimum", "mild", "moderate", "severe"}
 
 OPENAI_PRICING = {
-    # Estimated prices per 1,000 tokens; adjust if real billing differs.
     "gpt-5": {"prompt": 0.0015, "completion": 0.0025},
+    "gpt-4o": {"prompt": 0.0025, "completion": 0.010}, # Ter referentie
 }
-
 
 def _normalize_label(label: str) -> str:
     if not isinstance(label, str):
         return "unknown"
     label = label.strip().lower()
     return label if label in LABELS else "unknown"
-
 
 def _parse_json_response(text: str) -> dict:
     text = text.strip()
@@ -48,7 +38,6 @@ def _parse_json_response(text: str) -> dict:
                 pass
     return {}
 
-
 def _parse_label(text: str) -> str:
     parsed = _parse_json_response(text)
     label = parsed.get("label")
@@ -59,7 +48,6 @@ def _parse_label(text: str) -> str:
         return _normalize_label(match.group(1))
     return "unknown"
 
-
 def _parse_reasoning(text: str) -> str | None:
     parsed = _parse_json_response(text)
     reasoning = parsed.get("reasoning")
@@ -68,55 +56,62 @@ def _parse_reasoning(text: str) -> str | None:
     match = re.search(r'"reasoning"\s*:\s*"([^"]+)"', text)
     return match.group(1).strip() if match else None
 
-
 def _estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     prices = OPENAI_PRICING.get(model, {})
     prompt_rate = prices.get("prompt", 0.0)
     completion_rate = prices.get("completion", 0.0)
     return round((prompt_tokens * prompt_rate + completion_tokens * completion_rate) / 1000.0, 8)
 
-
 def classify(prompt: str, config: dict) -> dict:
-    """Classify a prompt using the OpenAI GPT-5 model.
-
-    Returns a standardized result dict with label, reasoning, token counts, and cost.
-    """
-    model = config.get("model")
-    temperature = config.get("temperature", 0.0)
+    """Classify a prompt using the OpenAI API (GPT-5 Optimized)."""
+    model = config.get("model", "gpt-5")
     max_tokens = config.get("max_tokens", 400)
+    
+    temperature = config.get("temperature", 0.0)
 
-    messages = [{"role": "user", "content": prompt}]
+    messages = [
+        {"role": "system", "content": "You are a clinical assistant. Output your classification in valid JSON format."},
+        {"role": "user", "content": prompt}
+    ]
+
+    # Stel de parameters direct correct in voor GPT-5
+    api_params = {
+        "model": model,
+        "messages": messages,
+        "response_format": {"type": "json_object"},
+        "max_completion_tokens": max_tokens
+    }
+
+    if not any(m in model.lower() for m in ["gpt-5", "o1"]):
+        api_params["temperature"] = temperature
 
     attempt = 0
     backoffs = [2, 4, 8]
+    
     while True:
         try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-            text = response.choices[0].message["content"]
-            break
+            response = client.chat.completions.create(**api_params)
+            text = response.choices[0].message.content
+            break 
         except Exception as exc:
             if attempt >= len(backoffs):
-                raise
+                raise exc
+            print(f"OpenAI error: {exc}. Retrying in {backoffs[attempt]}s...")
             time.sleep(backoffs[attempt])
             attempt += 1
 
-    label = _parse_label(text)
-    reasoning = _parse_reasoning(text)
-    usage = getattr(response, "usage", {})
-    tokens_in = int(getattr(usage, "prompt_tokens", usage.get("prompt_tokens", 0)))
-    tokens_out = int(getattr(usage, "completion_tokens", usage.get("completion_tokens", 0)))
-    cost_usd = _estimate_cost(model, tokens_in, tokens_out)
+    # Verwerking en metadata
+    usage = response.usage
+    tokens_in = usage.prompt_tokens
+    tokens_out = usage.completion_tokens
 
     return {
-        "label": label,
-        "reasoning": reasoning,
+        "label": _parse_label(text),
+        "reasoning": _parse_reasoning(text),
         "tokens_in": tokens_in,
         "tokens_out": tokens_out,
-        "cost_usd": cost_usd,
+        "cost_usd": _estimate_cost(model, tokens_in, tokens_out),
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "model": model,
     }
-
