@@ -15,7 +15,7 @@ from google.genai import types
 from dotenv import load_dotenv
 from google import genai
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Literal, Optional
 
 load_dotenv()
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
@@ -27,7 +27,7 @@ LABELS = {"minimum", "mild", "moderate", "severe"}
 
 GEMINI_PRICING = {
     # Estimated prices per 1,000 tokens; adjust if real billing differs.
-    "gemini-3-flash": {"prompt": 0.0012, "completion": 0.0012},
+    "gemini-3-flash-preview": {"prompt": 0.0012, "completion": 0.0012},
 }
 
 
@@ -87,63 +87,67 @@ def _safe_int(value, default=0) -> int:
 
 
 def _extract_label_reasoning_from_response(response) -> tuple[str, str | None]:
-    # Robustly extract a structured `label` and `reasoning` from a Gemini SDK response.
+    """
+    Robustly extract label and reasoning from a Gemini SDK response.
 
-    # Order of attempts:
-    # 1. Use `candidate.structured` or `response.output` if present (validated JSON object).
-    # 2. Try `response.text` as JSON.
-    # 3. Join `candidate.content` parts into text and parse JSON.
-    # 4. Regex-extract first {...} and parse.
-    # 5. Fallback: try to use thought parts as `reasoning` and text parts for label.
+    Attempt order:
+      1. response.parsed  — Pydantic model returned when response_schema is set (most reliable)
+      2. response.text    — raw JSON text, parse manually
+      3. candidate content parts (non-thought) joined and parsed
+      4. Regex fallback on any available text
+    Reasoning is separately collected from thought parts (ThinkingConfig).
+    """
+    label    = "unknown"
+    reasoning = None
 
-    try:
-        cand = response.candidates[0]
-    except Exception:
-        return "unknown", None
+    # ── 1. response.parsed (Pydantic instance from response_schema) ──────────
+    parsed_obj = getattr(response, "parsed", None)
+    if parsed_obj is not None:
+        raw_label = getattr(parsed_obj, "label", None)
+        label = _normalize_label(raw_label)
+        raw_r = getattr(parsed_obj, "reasoning", None)
+        reasoning = raw_r.strip() if isinstance(raw_r, str) and raw_r.strip() else None
 
-    # 1) structured object from SDK
-    structured = getattr(cand, "structured", None) or getattr(response, "output", None)
-    parsed = {}
-    if isinstance(structured, dict):
-        parsed = structured
-    else:
-        # 2) try response.text
+    # ── 2. response.text as JSON ──────────────────────────────────────────────
+    if label == "unknown":
         raw = getattr(response, "text", None) or ""
-        # 3) build raw from content parts if needed
-        if not raw:
-            try:
-                parts = getattr(cand, "content", []) or []
-                raw = "".join(getattr(p, "text", "") for p in parts if getattr(p, "text", None))
-            except Exception:
-                raw = ""
-
-        # 4) parse JSON or extract {...}
         if raw:
-            try:
-                parsed = json.loads(raw)
-            except Exception:
-                m = re.search(r"\{.*\}", raw, flags=re.S)
-                if m:
-                    try:
-                        parsed = json.loads(m.group())
-                    except Exception:
-                        parsed = {}
+            label = _parse_label(raw)
+            if reasoning is None:
+                reasoning = _parse_reasoning(raw)
 
-    # Extract fields if parsed is a dict
-    label = _normalize_label(parsed.get("label") if isinstance(parsed, dict) else None)
-    reasoning = parsed.get("reasoning") if isinstance(parsed, dict) else None
-    if isinstance(reasoning, str):
-        reasoning = reasoning.strip()
-    else:
-        reasoning = None
-
-    # 5) fallback: use thought parts for reasoning if nothing parsed
-    if not reasoning:
+    # ── 3. Candidate content parts (non-thought only) ────────────────────────
+    if label == "unknown":
         try:
-            parts = getattr(cand, "content", []) or []
-            thought_texts = [getattr(p, "text", "") for p in parts if getattr(p, "thought", False) and getattr(p, "text", None)]
-            if thought_texts:
-                reasoning = " ".join(thought_texts).strip()
+            cand    = response.candidates[0]
+            content = getattr(cand, "content", None)
+            parts   = getattr(content, "parts", []) or []
+            text_parts = [
+                getattr(p, "text", "")
+                for p in parts
+                if not getattr(p, "thought", False) and getattr(p, "text", None)
+            ]
+            raw = "".join(text_parts)
+            if raw:
+                label = _parse_label(raw)
+                if reasoning is None:
+                    reasoning = _parse_reasoning(raw)
+        except Exception:
+            pass
+
+    # ── 4. Extract reasoning from thought parts (ThinkingConfig) ─────────────
+    if reasoning is None:
+        try:
+            cand    = response.candidates[0]
+            content = getattr(cand, "content", None)
+            parts   = getattr(content, "parts", []) or []
+            thoughts = [
+                getattr(p, "text", "")
+                for p in parts
+                if getattr(p, "thought", False) and getattr(p, "text", None)
+            ]
+            if thoughts:
+                reasoning = " ".join(thoughts).strip()
         except Exception:
             pass
 
@@ -200,17 +204,22 @@ def classify(prompt: str, config: dict) -> dict:
     """
     model = config.get("model")
     temperature = config.get("temperature", 0.0)
-    max_tokens = config.get("max_tokens", 400)
+    max_tokens = config.get("max_tokens", 1000)
 
     client = genai.Client(api_key=GOOGLE_API_KEY)
 
     # Ensure a model is set; default to a reasonable Gemini variant
     model = model or "gemini-3.5-flash"
 
-    # Class to base response on
+    # Structured output schema — Literal enforces valid labels at the API level
     class LabelResponse(BaseModel):
-        label: str = Field(description="The predicted label for the input post, one of 'minimum', 'mild', 'moderate', 'severe', or 'unknown' if parsing fails.")
-        reasoning: Optional[str] = Field(description="The reasoning behind the predicted label, if available.")
+        label: Literal["minimum", "mild", "moderate", "severe"] = Field(
+            description="Depression severity label for the post."
+        )
+        reasoning: Optional[str] = Field(
+            default=None,
+            description="Brief reasoning for the classification.",
+        )
 
     # Only enable thinking for chain_of_thought — zero/few-shot don't need it
     # and it wastes tokens (= cost) when unused
