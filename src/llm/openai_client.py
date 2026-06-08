@@ -96,7 +96,7 @@ def classify(prompt: str, config: dict) -> dict:
     # Reasoning config — mirrors Gemini's ThinkingConfig logic
     use_reasoning = variant == "chain_of_thought"
     reasoning_cfg = (
-        {"effort": "medium", "summary": "auto"}
+        {"effort": "medium", "summary": "detailed"}
         if use_reasoning
         else {"effort": "none"}
     )

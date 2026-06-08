@@ -12,7 +12,7 @@ cost_cap_usd: 40.0
 
 gpt:
   model: "gpt-5.4-mini"
-  max_tokens: 1600
+  max_tokens: 2000
   output_dir: "results/llm_logs/gpt5"
   requests_per_minute: 450   
 # Gemini 3

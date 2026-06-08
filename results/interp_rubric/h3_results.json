@@ -1,0 +1,42 @@
+{
+  "n_raters": 4,
+  "n_posts": 34,
+  "means": {
+    "SHAP": {
+      "faithfulness": 3.84251968503937,
+      "clinical_relevance": 2.779527559055118,
+      "actionability": 2.425196850393701
+    },
+    "gpt": {
+      "faithfulness": 3.171875,
+      "clinical_relevance": 2.96875,
+      "actionability": 2.5078125
+    },
+    "gemini": {
+      "faithfulness": 3.7063492063492065,
+      "clinical_relevance": 3.619047619047619,
+      "actionability": 2.9603174603174605
+    }
+  },
+  "alphas": {
+    "SHAP": {
+      "faithfulness": 0.208976257121106,
+      "clinical_relevance": 0.25729002068569184,
+      "actionability": 0.08526831340352903
+    },
+    "gpt": {
+      "faithfulness": 0.44650201822409286,
+      "clinical_relevance": 0.37718821571995553,
+      "actionability": 0.41367035249181716
+    },
+    "gemini": {
+      "faithfulness": -0.06599105197825827,
+      "clinical_relevance": 0.2722233864211778,
+      "actionability": -0.03630489343344756
+    }
+  },
+  "verdicts": {
+    "gpt": "No clear advantage \u2014 only 0/3 criteria meet the pre-registered rule",
+    "gemini": "No clear advantage \u2014 only 0/3 criteria meet the pre-registered rule"
+  }
+}
