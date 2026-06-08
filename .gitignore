@@ -235,3 +235,8 @@ results/figures/
 .env
 data/glove.6B.300d.txt
 /.vscode
+paper/elsarticle-num.bst
+paper/elsarticle.cls
+paper/manuscript.tex
+paper/manuscript_old.tex
+paper/references.bib
