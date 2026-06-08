@@ -49,3 +49,64 @@ Best encoder: RoBERTa-base lr=2e-5 (macro-F1=0.679 overall)
 18:02  SHAP Partition explainer on MentalBERT lr=2e-5 checkpoint  COMPLETE
          32 examples (6 correct + 2 wrong per class)
          Figures saved to results/figures/shap/
+
+
+3 June 2026 — LLM evaluation: GPT-5.4-mini + Gemini 3 Flash
+------------------------------------------------------------------------
+Config: configs/llm.yaml — data split: test set (N=1041, stratified 80/10/10, seed=42)
+Prompt variants: zero_shot, few_shot (2 examples/class from train), chain_of_thought
+Few-shot examples sampled from train set only (random_state=42), never from test set.
+Reasoning: GPT uses OpenAI Responses API (effort=medium, summary=detailed);
+           Gemini uses ThinkingConfig(include_thoughts=True) — CoT only.
+           Zero/few-shot runs: reasoning disabled for both models.
+
+12:46  SANITY CHECK, GPT-5.4-mini + Gemini 3 Flash  chain_of_thought  --limit 3
+         Verified: valid labels, reasoning populated, cost ~$0.001/call
+         GPT avg tokens_out=160  |  Gemini avg tokens_out=54
+
+~12:50  Config update: requests_per_minute 60 → 450 (GPT) / 950 (Gemini)
+         Rationale: Tier 1 limits are 500/1000 RPM; conservative margin applied
+
+~13:00  Config update: max_tokens 1000 -> 1600 (both models)
+         Rationale: ~14% null reasoning in Gemini CoT; suspected token budget exhaustion.
+         Root cause confirmed: structured output + ThinkingConfig conflict in preview model.
+         Fix applied: _extract_label_reasoning_from_response() rewritten to use
+         response.parsed as primary path; LabelResponse schema changed to
+         Literal["minimum","mild","moderate","severe"] to prevent model returning "unknown".
+
+13:04  GPT-5.4-mini  chain_of_thought  max_tokens=1600  RPM=450  COMPLETE
+         macro-F1=0.6047 (CI 0.566–0.645)  acc=67.7%
+         Twitter macro-F1=0.6530 | Reddit macro-F1=0.3892
+         Note: CoT best-performing GPT variant; Reddit score notably weak
+
+13:17  Gemini 3 Flash  chain_of_thought  max_tokens=1600  RPM=950  COMPLETE
+         macro-F1=0.5540 (CI 0.516–0.588)  acc=62.5%
+         Twitter macro-F1=0.5685 | Reddit macro-F1=0.4581
+         Note: multiple restarts due to Gemini client parsing fix applied mid-run
+
+14:10  GPT-5.4-mini  zero_shot  max_tokens=1600  RPM=450  COMPLETE
+         macro-F1=0.5876 (CI 0.551–0.623)  acc=65.2%
+         Twitter macro-F1=0.6232 | Reddit macro-F1=0.4202
+
+14:49  GPT-5.4-mini  few_shot  max_tokens=1600  RPM=450  COMPLETE
+         macro-F1=0.5311 (CI 0.497–0.565)  acc=59.8%
+         Twitter macro-F1=0.5475 | Reddit macro-F1=0.4195
+         Note: few_shot WORSE than zero_shot (-0.056); examples appear to bias GPT.
+         Gemini shows opposite pattern (few_shot > zero_shot), suggesting model-specific
+         sensitivity to in-context examples.
+
+15:09  Gemini 3 Flash  zero_shot  max_tokens=1600  RPM=950  COMPLETE
+         macro-F1=0.5513 (CI 0.515–0.586)  acc=61.9%
+         Twitter macro-F1=0.5591 | Reddit macro-F1=0.4961
+
+17:44  Gemini 3 Flash  few_shot  max_tokens=1600  RPM=950  COMPLETE
+         macro-F1=0.5678 (CI 0.528–0.606)  acc=63.4%
+         Twitter macro-F1=0.5830 | Reddit macro-F1=0.4578
+
+Post-run  GPT-5.4-mini  fill_reasoning  (146 posts with null reasoning summary)
+         Cause: reasoning summary="auto" suppressed trace on straightforward calls.
+         Fix: summary changed to "detailed"; targeted re-run via src/llm/fill_reasoning.py.
+         All 146 records updated in JSONL logs. Macro-F1 unaffected (labels were correct).
+
+Best LLM: GPT-5.4-mini CoT (macro-F1=0.6047): below both encoders (~0.68)
+          Gemini 3 Flash CoT (macro-F1=0.5540): consistent but weaker cross-platform
