@@ -1,0 +1,51 @@
+TRAINING LOG of Group 3
+================================================================================
+
+26 May 2026 - Encoder fine-tuning
+------------------------------------------------------------------------
+16:30  MentalBERT  lr=2e-5  4 epochs  COMPLETE
+         macro-F1=0.675 (CI 0.641–0.709)  acc=75.4%
+         Twitter macro-F1=0.728 | Reddit macro-F1=0.434
+
+16:30  RoBERTa-base  lr=2e-5  4 epochs  COMPLETE
+         macro-F1=0.679 (CI 0.643–0.714)  acc=75.1%
+         Twitter macro-F1=0.716 | Reddit macro-F1=0.487
+
+16:56  MentalBERT  lr=1e-5  4 epochs  COMPLETE
+         macro-F1=0.669 (CI 0.634–0.703)  acc=75.2%
+
+17:19  RoBERTa-base  lr=2e-5  4 epochs  COMPLETE  [full sweep re-run]
+         macro-F1=0.679 (CI 0.643–0.714)  acc=75.1%
+
+17:23  RoBERTa-base  lr=1e-5  4 epochs  COMPLETE
+         macro-F1=0.663 (CI 0.628–0.699)  acc=73.7%
+
+17:26  RoBERTa-base  lr=3e-5  4 epochs  COMPLETE
+         macro-F1=0.670 (CI 0.635–0.704)  acc=75.1%
+
+17:31  MentalBERT  lr=3e-5  4 epochs  COMPLETE
+         macro-F1=0.660 (CI 0.623–0.695)  acc=74.9%
+
+Best encoder: RoBERTa-base lr=2e-5 (macro-F1=0.679 overall)
+             MentalBERT lr=2e-5 strongest on Twitter (macro-F1=0.728)
+
+
+1 June 2026 — LSTM baseline
+------------------------------------------------------------------------
+17:53  BiLSTM + GloVe 300d  COMPLETE
+         macro-F1=0.525 (CI 0.487–0.561)  acc=61.5%
+         Twitter macro-F1=0.545 | Reddit macro-F1=0.388
+         Note: floor baseline as expected; establishes lower bound for comparison
+
+
+1 June 2026 — MentalBERT checkpoint restore
+------------------------------------------------------------------------
+18:03  MentalBERT lr=2e-5 retrained to restore checkpoints deleted during
+       earlier disk cleanup. Metrics unchanged (macro-F1=0.675).
+
+
+2 June 2026 — SHAP token attributions
+------------------------------------------------------------------------
+18:02  SHAP Partition explainer on MentalBERT lr=2e-5 checkpoint  COMPLETE
+         32 examples (6 correct + 2 wrong per class)
+         Figures saved to results/figures/shap/
