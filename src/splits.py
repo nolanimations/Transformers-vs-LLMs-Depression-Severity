@@ -3,7 +3,7 @@ Stratified 80/10/10 train/val/test split on combined_dataset.csv.
 Stratifies on (label_id x source) so both class and platform balance are preserved.
 Saves to data/splits/{train,val,test}.csv.
 
-Run once — do not re-run after splits are shared with teammates.
+Run once.
 The test set is frozen from this point forward; no model tuning against it.
 """
 
