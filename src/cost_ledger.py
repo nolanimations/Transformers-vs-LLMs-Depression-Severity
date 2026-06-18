@@ -64,14 +64,21 @@ LLM_MODELS = {
 VARIANT_ORDER = ["zero_shot", "few_shot", "chain_of_thought"]
 
 # ── Rough CO2 constants (order-of-magnitude only — see notes in summary) ──────
-# ~0.3 Wh per 1k tokens processed, a commonly-cited order-of-magnitude figure
-# for transformer inference on data-centre accelerators.
+# Energy per token: assume ~0.3 Wh per 1k tokens for transformer inference on
+# data-centre accelerators. Same order of magnitude as recent per-query LLM
+# inference measurements (~0.3 Wh/query for GPT-4o-class models; Google reports
+# ~0.24 Wh per median Gemini text prompt). Treated as an assumption, not a
+# precise figure. Methodology follows Strubell et al. (2019) and Lacoste et al.
+# (2019), arXiv:1910.09700 (the ML CO2 Impact accounting approach).
 KWH_PER_1K_TOKENS = 0.0003
-# Global average grid carbon intensity (kg CO2 / kWh), IEA ~2023 figure.
+# Global average grid carbon intensity (kg CO2 / kWh). IEA Emissions Factors put
+# the global average at ~0.44-0.48; we use a round, conservative 0.4.
+# https://www.iea.org/data-and-statistics/data-product/emissions-factors-2024
 CARBON_INTENSITY_KG_PER_KWH = 0.4
 # Assumed power draw (W) for the local encoder benchmark, by device type.
-# GPU figure is the rated TDP of the RTX 3080 used for all training/inference
-# on the team's training machine (this repo's results were copied from there).
+# GPU figure is the rated board power (TDP) of the RTX 3080 used for all
+# training/inference on the team's training machine:
+# https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3080-3080ti/
 ASSUMED_GPU_POWER_W = 320
 ASSUMED_CPU_POWER_W = 65
 

@@ -1,10 +1,22 @@
+"""
+Stage 0 (Reddit only): basic text cleanup of the raw Reddit depression-severity
+dataset, run once before build_combined_dataset.py.
+
+Input  : data/Reddit_depression_dataset.csv
+Output : data/Reddit_depression_dataset_clean.csv
+"""
+
 # Data Handling
-import pandas as pd             
-import html                     
-import unicodedata              
-import emoji                    
-import re                       
+import pandas as pd
+import html
+import unicodedata
+import emoji
+import re
 import string
+from pathlib import Path
+
+DATA_DIR = Path(__file__).parent.parent / "data"
+
 
 def reduce_lengthening(text):
     # This regex looks for any character repeated 3 or more times
@@ -40,9 +52,9 @@ def preprocess_text(text: str):
     
     return text
 
-depression_df = pd.read_csv('Reddit_depression_dataset.csv')
+depression_df = pd.read_csv(DATA_DIR / "Reddit_depression_dataset.csv")
 
 depression_df['text'] = depression_df['text'].apply(preprocess_text)
-print("test")
-depression_df.to_csv("Reddit_depression_dataset_clean.csv", index=False)
+depression_df.to_csv(DATA_DIR / "Reddit_depression_dataset_clean.csv", index=False)
+print(f"Saved: {DATA_DIR / 'Reddit_depression_dataset_clean.csv'}")
 

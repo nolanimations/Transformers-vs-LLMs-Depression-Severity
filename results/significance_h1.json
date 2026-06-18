@@ -1,0 +1,63 @@
+{
+  "n_test": 1041,
+  "macro_f1": {
+    "RoBERTa": 0.6788302483135225,
+    "MentalBERT": 0.6774789809413859,
+    "GPT-5.4-mini CoT": 0.6011227105513255,
+    "Gemini 3 Flash CoT": 0.5539821480767739
+  },
+  "pairs": {
+    "RoBERTa vs GPT-5.4-mini CoT": {
+      "mcnemar": {
+        "a_right_b_wrong": 134,
+        "a_wrong_b_right": 97,
+        "n_discordant": 231,
+        "p_value": 0.017663498395802377
+      },
+      "bootstrap_delta": {
+        "delta_point": 0.07770753776219697,
+        "delta_ci_low": 0.03764633352889527,
+        "delta_ci_high": 0.11995667224084468
+      }
+    },
+    "MentalBERT vs GPT-5.4-mini CoT": {
+      "mcnemar": {
+        "a_right_b_wrong": 149,
+        "a_wrong_b_right": 106,
+        "n_discordant": 255,
+        "p_value": 0.008406875906846037
+      },
+      "bootstrap_delta": {
+        "delta_point": 0.07635627039006043,
+        "delta_ci_low": 0.03456056835077709,
+        "delta_ci_high": 0.1167681642599856
+      }
+    },
+    "RoBERTa vs Gemini 3 Flash CoT": {
+      "mcnemar": {
+        "a_right_b_wrong": 159,
+        "a_wrong_b_right": 90,
+        "n_discordant": 249,
+        "p_value": 1.455121867502467e-05
+      },
+      "bootstrap_delta": {
+        "delta_point": 0.12484810023674853,
+        "delta_ci_low": 0.08352684755131096,
+        "delta_ci_high": 0.16658585153205677
+      }
+    },
+    "MentalBERT vs Gemini 3 Flash CoT": {
+      "mcnemar": {
+        "a_right_b_wrong": 169,
+        "a_wrong_b_right": 94,
+        "n_discordant": 263,
+        "p_value": 4.378668722270096e-06
+      },
+      "bootstrap_delta": {
+        "delta_point": 0.123496832864612,
+        "delta_ci_low": 0.08224389314258358,
+        "delta_ci_high": 0.16389379911963833
+      }
+    }
+  }
+}

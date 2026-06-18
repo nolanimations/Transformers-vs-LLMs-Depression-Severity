@@ -5,5 +5,5 @@ GPT-5.4-mini,chain_of_thought,1041,1210,1.602191,1.5391,784.5,163.5,3.442,113.76
 Gemini 3 Flash,zero_shot,1041,1041,0.238498,0.2291,152.4,38.5,3.84,22.91,No (cloud API),0.5513477497901803
 Gemini 3 Flash,few_shot,1041,1041,1.01986,0.9797,779.4,37.0,4.019,97.969,No (cloud API),0.5677747676683046
 Gemini 3 Flash,chain_of_thought,1041,1041,1.056792,1.0152,794.4,51.6,5.727,101.517,No (cloud API),0.5539821480767739
-MentalBERT,"local_inference (cpu, batch=16)",200,,0.0,0.0,,,0.08989,0.649,Yes (local hardware),0.6774789809413859
-RoBERTa,"local_inference (cpu, batch=16)",200,,0.0,0.0,,,0.08965,0.647,Yes (local hardware),0.6788302483135225
+MentalBERT,"local_inference (cuda, batch=16)",200,,0.0,0.0,,,0.00167,0.06,Yes (local hardware),0.6774789809413859
+RoBERTa,"local_inference (cuda, batch=16)",200,,0.0,0.0,,,0.00162,0.058,Yes (local hardware),0.6788302483135225

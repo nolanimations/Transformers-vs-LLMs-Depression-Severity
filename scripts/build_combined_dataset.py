@@ -15,7 +15,9 @@ import html
 from pathlib import Path
 
 HERE          = Path(__file__).parent
-TWITTER_PATH  = Path(r"C:/Users/Nolan/Downloads/deptweet_dataset.csv")
+# Raw DEPTWEET CSV — not committed (data-use-agreement restricted, see .gitignore).
+# Place it at data/deptweet_dataset.csv (shared with the team via Discord).
+TWITTER_PATH  = HERE / "data" / "deptweet_dataset.csv"
 REDDIT_PATH   = HERE / "data" / "Reddit_depression_dataset_clean.csv"
 OUT_TWITTER   = HERE / "data" / "twitter_processed.csv"
 OUT_REDDIT    = HERE / "data" / "reddit_processed.csv"
