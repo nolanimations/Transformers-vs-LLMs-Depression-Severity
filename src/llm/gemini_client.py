@@ -9,7 +9,6 @@ Reads GOOGLE_API_KEY from .env.
 import json
 import os
 import re
-import time
 from google.genai import types
 
 from dotenv import load_dotenv
@@ -26,7 +25,6 @@ genai.api_key = GOOGLE_API_KEY
 LABELS = {"minimum", "mild", "moderate", "severe"}
 
 GEMINI_PRICING = {
-    # Estimated prices per 1,000 tokens; adjust if real billing differs.
     "gemini-3-flash-preview": {"prompt": 0.0012, "completion": 0.0012},
 }
 
@@ -154,49 +152,6 @@ def _extract_label_reasoning_from_response(response) -> tuple[str, str | None]:
     return label, reasoning
 
 
-# def classify(prompt: str, config: dict) -> dict:
-#     """Classify a prompt using the Gemini 3 Flash model.
-
-#     Returns a standardized result dict with label, reasoning, token counts, and cost.
-#     """
-#     model = config.get("model")
-#     temperature = config.get("temperature", 0.0)
-#     max_tokens = config.get("max_tokens", 400)
-
-#     client = genai.Client(api_key=GOOGLE_API_KEY)
-#     chat = client.chats.create(
-#         model=model,
-#         config={"temperature": temperature, "max_output_tokens": max_tokens},
-#     )
-
-#     attempt = 0
-#     backoffs = [2, 4, 8]
-#     while True:
-#         try:
-#             response = chat.send_message(prompt)
-#             text = response.text or ""
-#             break
-#         except Exception:
-#             if attempt >= len(backoffs):
-#                 raise
-#             time.sleep(backoffs[attempt])
-#             attempt += 1
-
-#     label = text
-#     reasoning = _parse_reasoning(text)
-#     usage = getattr(response, "usage_metadata", None)
-#     prompt_tokens = _safe_int(getattr(usage, "prompt_token_count", None))
-#     completion_tokens = _safe_int(getattr(usage, "candidates_token_count", None))
-#     cost_usd = _estimate_cost(model, prompt_tokens, completion_tokens)
-
-#     return {
-#         "label": label,
-#         "reasoning": reasoning,
-#         "tokens_in": prompt_tokens,
-#         "tokens_out": completion_tokens,
-#         "cost_usd": cost_usd,
-#     }
-
 def classify(prompt: str, config: dict) -> dict:
     """Classify a prompt using the Gemini 3 Flash model.
 
@@ -208,10 +163,8 @@ def classify(prompt: str, config: dict) -> dict:
 
     client = genai.Client(api_key=GOOGLE_API_KEY)
 
-    # Ensure a model is set; default to a reasonable Gemini variant
     model = model or "gemini-3.5-flash"
 
-    # Structured output schema — Literal enforces valid labels at the API level
     class LabelResponse(BaseModel):
         label: Literal["minimum", "mild", "moderate", "severe"] = Field(
             description="Depression severity label for the post."
@@ -221,8 +174,6 @@ def classify(prompt: str, config: dict) -> dict:
             description="Brief reasoning for the classification.",
         )
 
-    # Only enable thinking for chain_of_thought — zero/few-shot don't need it
-    # and it wastes tokens (= cost) when unused
     use_thinking = config.get("variant") == "chain_of_thought"
     config_kwargs = dict(
         temperature=temperature,
@@ -241,24 +192,6 @@ def classify(prompt: str, config: dict) -> dict:
         )
     except Exception:
         raise
-    # chat = client.chats.create(
-    #     model=model,
-    #     config={"temperature": temperature, "max_output_tokens": max_tokens},
-    # )
-
-    # attempt = 0
-    # backoffs = [2, 4, 8]
-    # while True:
-    #     try:
-    #         response = chat.send_message(prompt)
-    #         text = response.text or ""
-    #         break
-    #     except Exception:
-    #         if attempt >= len(backoffs):
-    #             raise
-    #         time.sleep(backoffs[attempt])
-    #         attempt += 1
-    # Extract label and reasoning using robust extractor
     label, reasoning = _extract_label_reasoning_from_response(response)
     usage = getattr(response, "usage_metadata", None)
     prompt_tokens = _safe_int(getattr(usage, "prompt_token_count", None))
@@ -266,7 +199,7 @@ def classify(prompt: str, config: dict) -> dict:
     cost_usd = _estimate_cost(model, prompt_tokens, completion_tokens)
 
     return {
-        "label": label,          # parsed label string, e.g. "mild"
+        "label": label,
         "reasoning": reasoning,
         "tokens_in": prompt_tokens,
         "tokens_out": completion_tokens,
@@ -275,5 +208,3 @@ def classify(prompt: str, config: dict) -> dict:
         "max_tokens": max_tokens,
         "model": model,
     }
-
-

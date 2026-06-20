@@ -7,13 +7,10 @@ to the model, not the prompt design.
     from src.llm.prompts import build_prompt
 """
 
-# TODO: implement build_prompt(variant, post, few_shot_examples=None) -> str
-
 from dotenv import load_dotenv
 import os
 from pathlib import Path
 import pandas as pd
-import random
 
 load_dotenv()
 openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -45,7 +42,6 @@ def build_prompt(variant: str, post: str, few_shot_examples=None) -> str:
                 raise FileNotFoundError(f"Training file not found at {train_path}")
 
             df = pd.read_csv(train_path)
-            # Ensure consistent sampling
             random_state = 42
             few_shot_examples = (
                 df.groupby("label_id")
@@ -77,4 +73,3 @@ def build_prompt(variant: str, post: str, few_shot_examples=None) -> str:
         )
 
     raise ValueError("Invalid variant. Choose from 'zero_shot', 'few_shot', or 'chain_of_thought'.")
-

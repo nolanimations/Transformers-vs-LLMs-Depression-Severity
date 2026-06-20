@@ -26,7 +26,6 @@ from transformers import (
     TrainingArguments,
 )
 
-# Ensure repo root is on the path when running as a script
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.data import class_weights as compute_class_weights, load_splits
@@ -40,7 +39,6 @@ LABEL2ID = {v: k for k, v in ID2LABEL.items()}
 
 
 # ── Weighted Trainer ──────────────────────────────────────────────────────────
-
 class WeightedTrainer(Trainer):
     """
     HuggingFace Trainer with class-weighted CrossEntropyLoss.
@@ -65,7 +63,6 @@ class WeightedTrainer(Trainer):
 
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
-
 def compute_metrics(eval_pred) -> dict:
     """
     Called by Trainer after each eval step.
@@ -79,7 +76,6 @@ def compute_metrics(eval_pred) -> dict:
 
 
 # ── Dataset ───────────────────────────────────────────────────────────────────
-
 def build_hf_dataset(df, tokenizer, max_length: int) -> HFDataset:
     """
     Tokenize a split DataFrame and return a HuggingFace Dataset.
@@ -101,7 +97,6 @@ def build_hf_dataset(df, tokenizer, max_length: int) -> HFDataset:
 
 
 # ── Main training function ────────────────────────────────────────────────────
-
 def train(cfg: dict) -> dict:
     """
     Fine-tune a pre-trained encoder model on the depression severity task.
@@ -129,8 +124,6 @@ def train(cfg: dict) -> dict:
         num_labels    = 4,
         id2label      = ID2LABEL,
         label2id      = LABEL2ID,
-        # Suppress the "mismatched sizes" warning — expected when swapping in
-        # a new classification head over a pre-trained backbone
         ignore_mismatched_sizes = True,
     )
 
@@ -160,8 +153,8 @@ def train(cfg: dict) -> dict:
         greater_is_better           = True,
         logging_steps               = cfg["logging_steps"],
         seed                        = cfg["seed"],
-        report_to                   = "none",   # no wandb / tensorboard needed
-        save_total_limit            = 2,         # keep only the 2 best checkpoints
+        report_to                   = "none",
+        save_total_limit            = 2,
     )
 
     # ── Train ─────────────────────────────────────────────────────────────────
@@ -171,7 +164,7 @@ def train(cfg: dict) -> dict:
         args              = training_args,
         train_dataset     = train_ds,
         eval_dataset      = val_ds,
-        processing_class  = tokenizer,  # renamed from `tokenizer` in transformers v5
+        processing_class  = tokenizer,
         data_collator     = data_collator,
         compute_metrics   = compute_metrics,
     )
@@ -180,7 +173,6 @@ def train(cfg: dict) -> dict:
     trainer.train()
 
     # ── Test evaluation ───────────────────────────────────────────────────────
-    # trainer.predict() uses the best checkpoint (load_best_model_at_end=True)
     log.info("Evaluating best checkpoint on test set ...")
     prediction_output = trainer.predict(test_ds)
     test_preds = np.argmax(prediction_output.predictions, axis=1)
@@ -198,7 +190,6 @@ def train(cfg: dict) -> dict:
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fine-tune MentalBERT or RoBERTa")
     parser.add_argument("--config", required=True, help="Path to YAML config file")

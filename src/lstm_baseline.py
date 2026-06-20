@@ -14,7 +14,7 @@ Usage:
 
 See notebooks/03_lstm_run.ipynb for step-by-step guidance.
 """
-#------------------------------------------------------------------------------------
+
 import sys
 from pathlib import Path
 
@@ -23,8 +23,6 @@ from pathlib import Path
 # `import src` from resolving. Ensure the repo root is on sys.path so
 # `from src import ...` works whether run as a script or as a module.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-#------------------------------------------------------------------------------------
 
 import argparse
 import yaml
@@ -252,7 +250,6 @@ if __name__ == "__main__":
         cfg = yaml.safe_load(f)
 
     set_seed(cfg["seed"])
-    # Prepare data, vocab and embeddings (expects `data/vocab.json` and `data/glove_embeddings.pt` exist)
     train_df, val_df, test_df = load_splits()
 
     vocab_path = Path("data") / "vocab.json"
@@ -266,7 +263,6 @@ if __name__ == "__main__":
         raise FileNotFoundError(f"Embeddings not found at {emb_file} — run the notebook embedding cell first")
     emb_tensor = torch.load(emb_file)
 
-    # datasets + loaders
     train_ds = TextDataset(train_df, word2idx, max_len=cfg.get("max_length", 128))
     val_ds = TextDataset(val_df, word2idx, max_len=cfg.get("max_length", 128))
     test_ds = TextDataset(test_df, word2idx, max_len=cfg.get("max_length", 128))
@@ -284,7 +280,6 @@ if __name__ == "__main__":
 
     out_dir = Path(cfg.get("output_dir", "results/runs/lstm"))
 
-    # run training & evaluation
     train_and_eval(
         model=model,
         opt=opt,

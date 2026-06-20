@@ -34,7 +34,6 @@ from pathlib import Path
 import numpy as np
 
 # ── Constants ──────────────────────────────────────────────────────────────────
-
 CRITERIA = ["faithfulness", "clinical_relevance", "actionability"]
 
 CRITERION_DESC = {
@@ -51,12 +50,10 @@ CRITERION_DESC = {
 
 RATER_NAMES = ["nolan", "xander", "vincent", "efraim"]
 
-# Explanation slots shown to raters
 EXPL_IDS = ["SHAP", "CoT_A", "CoT_B"]
 
 
 # ── Data loading ───────────────────────────────────────────────────────────────
-
 def load_examples_meta(shap_dir: str | Path) -> list[dict]:
     """
     Load the curated SHAP examples metadata saved by notebook 07.
@@ -123,7 +120,6 @@ def load_cot_rationales(log_dir: str | Path, model_key: str) -> dict[int, str]:
 
 
 # ── HTML helpers ───────────────────────────────────────────────────────────────
-
 def _embed_png(png_path: Path) -> str:
     """Return an <img> tag with the PNG embedded as base64 (self-contained HTML)."""
     if not png_path.exists():
@@ -209,7 +205,7 @@ def _build_html(posts: list[dict]) -> str:
                 f'</div>'
             )
 
-        start_row    = (p["post_id"] - 1) * 3 + 2   # +2: header row + 1-indexing
+        start_row    = (p["post_id"] - 1) * 3 + 2
         expls_joined = "\n".join(expls_html)
 
         post_blocks.append(
@@ -262,7 +258,6 @@ def _build_html(posts: list[dict]) -> str:
 
 
 # ── generate() ────────────────────────────────────────────────────────────────
-
 def generate(
     output_dir:     str | Path = "results/interp_rubric",
     shap_dir:       str | Path = "results/figures/shap",
@@ -312,7 +307,7 @@ def generate(
 
     # ── Build posts, assign blind slots ─────────────────────────────────────
     posts:     list[dict] = []
-    blind_key: dict       = {}   # post_id (str) -> {"CoT_A": "gpt"/"gemini", "CoT_B": ...}
+    blind_key: dict       = {}
     skipped = 0
 
     for ex in examples:
@@ -320,16 +315,13 @@ def generate(
         gpt_text    = gpt_rationales.get(idx)
         gemini_text = gemini_rationales.get(idx)
 
-        # Skip posts where BOTH rationales are missing
         if gpt_text is None and gemini_text is None:
             skipped += 1
             continue
 
-        # Graceful fallback when one model failed on this post
         gpt_text    = gpt_text    or "[GPT rationale unavailable — LLM call failed for this post]"
         gemini_text = gemini_text or "[Gemini rationale unavailable — LLM call failed for this post]"
 
-        # Randomly swap GPT/Gemini into slots A and B (same shuffle for all raters)
         if rng.random() < 0.5:
             cot_a_text, cot_b_text = gpt_text,    gemini_text
             assignment = {"CoT_A": "gpt", "CoT_B": "gemini"}
@@ -408,7 +400,6 @@ def generate(
 
 
 # ── analyze() ─────────────────────────────────────────────────────────────────
-
 def _load_ratings(output_dir: Path) -> list[dict]:
     """Load all rater_*.csv files. Rows with any blank criterion are skipped."""
     ratings_dir = output_dir / "ratings"
@@ -478,11 +469,9 @@ def _krippendorff_alpha(reliability_data: np.ndarray) -> float:
     except ImportError:
         pass
 
-    # Manual fallback — d(v,u)^2 = (v-u)^2 for ordinal
     data = np.array(reliability_data, dtype=float)
     _, n_c = data.shape
 
-    # Observed disagreement
     do_sum, do_n = 0.0, 0
     for col in range(n_c):
         vals = data[:, col]
@@ -498,7 +487,6 @@ def _krippendorff_alpha(reliability_data: np.ndarray) -> float:
         return float("nan")
     d_o = do_sum / do_n
 
-    # Expected disagreement (all values pooled)
     all_v = data[~np.isnan(data)]
     n_all = len(all_v)
     if n_all < 2:
@@ -632,7 +620,6 @@ def analyze(output_dir: str | Path = "results/interp_rubric") -> None:
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Interpretability rubric (H3): generate rating sheet or analyze results."

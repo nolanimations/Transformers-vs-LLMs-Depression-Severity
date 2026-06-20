@@ -53,7 +53,6 @@ def main():
     parser.add_argument("--dry_run", action="store_true", help="Build prompts but don't call the LLM")
     args = parser.parse_args()
 
-    # Load config
     cfg_path = Path("configs/llm.yaml")
     with cfg_path.open("r", encoding="utf-8") as fh:
         cfg = yaml.safe_load(fh)
@@ -72,7 +71,6 @@ def main():
     timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     out_path = output_dir / f"{model_key}_{args.variant}_{timestamp}.jsonl"
 
-    # Choose classifier
     if model_key == "gemini":
         if classify_gemini is None:
             raise RuntimeError("Gemini client is not importable. Check environment and dependencies.")
@@ -82,14 +80,12 @@ def main():
             raise RuntimeError("OpenAI client is not importable. Check environment and dependencies.")
         classify_fn = classify_gpt
 
-    # Load splits and examples
     train_df, val_df, test_df = load_splits()
     df = test_df
     total = len(df)
     start = args.start
     limit = args.limit or total
 
-    # Prepare few-shot examples if needed
     few_shot_examples = None
     if args.variant in {"few_shot", "chain_of_thought"}:
         n_per_class = int(cfg.get("few_shot_examples_per_class", 2))
@@ -134,7 +130,6 @@ def main():
             time.sleep(sleep_between)
             continue
 
-        # Call classifier with simple retries
         attempt = 0
         backoffs = [2, 4, 8]
         last_exc = None
@@ -157,7 +152,6 @@ def main():
             time.sleep(sleep_between)
             continue
 
-        # normalize and log
         label = res.get("label")
         reasoning = res.get("reasoning")
         tokens_in = res.get("tokens_in", 0)
@@ -213,4 +207,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

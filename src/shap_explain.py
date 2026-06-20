@@ -34,7 +34,6 @@ LABEL_COLOURS = {
 
 
 # ── Model loading ─────────────────────────────────────────────────────────────
-
 def find_best_checkpoint(run_dir: str | Path) -> Path:
     """
     Return the path to the best model checkpoint saved by HuggingFace Trainer.
@@ -54,7 +53,6 @@ def find_best_checkpoint(run_dir: str | Path) -> Path:
             log.info(f"Best checkpoint from trainer_state.json: {best}")
             return Path(best)
 
-    # Fallback: highest-numbered checkpoint directory
     checkpoints = sorted(
         run_dir.glob("checkpoint-*"),
         key=lambda p: int(p.name.split("-")[1]),
@@ -98,7 +96,6 @@ def load_model(run_dir: str | Path, model_name: str, device: torch.device | None
 
 
 # ── Inference ─────────────────────────────────────────────────────────────────
-
 def get_predictions(
     model, tokenizer, texts: list[str], device, max_length: int = 256, batch_size: int = 32
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -129,7 +126,6 @@ def get_predictions(
 
 
 # ── Example selection ─────────────────────────────────────────────────────────
-
 def select_examples(
     test_df,
     preds: np.ndarray,
@@ -159,11 +155,9 @@ def select_examples(
         wrong     = (preds != cls) & cls_mask
         confidence = probs[np.arange(len(probs)), preds]
 
-        # High-confidence correct predictions
         correct_idx = np.where(correct)[0]
         correct_idx = correct_idx[np.argsort(-confidence[correct_idx])][:n_correct]
 
-        # Borderline wrong predictions (lowest confidence in the wrong direction)
         wrong_idx = np.where(wrong)[0]
         wrong_idx = wrong_idx[np.argsort(confidence[wrong_idx])][:n_wrong]
 
@@ -186,7 +180,6 @@ def select_examples(
 
 
 # ── SHAP ──────────────────────────────────────────────────────────────────────
-
 def make_predict_fn(model, tokenizer, device, max_length: int = 256, batch_size: int = 8):
     """
     Return a function suitable for shap.Explainer:
@@ -233,7 +226,6 @@ def run_shap(texts: list[str], predict_fn, tokenizer, seed: int = 42):
 
 
 # ── Figures ───────────────────────────────────────────────────────────────────
-
 def save_figures(
     shap_values,
     examples: list[dict],
@@ -254,10 +246,9 @@ def save_figures(
 
     for i, example in enumerate(examples):
         pred_cls   = list(ID2LABEL.values()).index(example["pred_label"])
-        sv         = shap_values[i, :, pred_cls]   # SHAP values for predicted class
-        tokens     = shap_values.data[i]            # token strings
+        sv         = shap_values[i, :, pred_cls]
+        tokens     = shap_values.data[i]
 
-        # Remove [CLS], [SEP], padding tokens
         keep = [
             j for j, t in enumerate(tokens)
             if t not in ("[CLS]", "[SEP]", "<s>", "</s>", "<pad>", "[PAD]")
@@ -265,7 +256,6 @@ def save_figures(
         sv_clean     = np.array([sv.values[j] for j in keep])
         tokens_clean = [tokens[j]              for j in keep]
 
-        # Top-N by absolute value
         top_idx = np.argsort(np.abs(sv_clean))[-top_n_tokens:][::-1]
         top_sv     = sv_clean[top_idx]
         top_tokens = [tokens_clean[j] for j in top_idx]

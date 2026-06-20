@@ -38,10 +38,8 @@ log = get_logger(__name__)
 
 # ── Regex patterns ─────────────────────────────────────────────────────────────
 
-# Colon-style emoji produced by our preprocessor  (:heart:, :sob:, :cry_face:)
 _EMOJI_COLONS = re.compile(r':[a-z0-9_]+:')
 
-# Unicode emoji blocks (covers most common emoji ranges)
 _UNICODE_EMOJI = re.compile(
     "["
     "\U0001F600-\U0001F64F"   # emotes
@@ -56,15 +54,12 @@ _UNICODE_EMOJI = re.compile(
     flags=re.UNICODE,
 )
 
-# Any character repeated 3+ times in a row  (soooo, nooo, !!!, ???, pleaaase)
 _REPEATED_CHARS = re.compile(r'(.)\1{2,}')
 
-# All-caps word: 2 or more uppercase letters, no lowercase  (HELP, IM, WTF)
 _ALL_CAPS = re.compile(r'^[A-Z]{2,}$')
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-
 def _tokenize(text: str) -> list[str]:
     """
     Whitespace split
@@ -97,7 +92,7 @@ def _score_tokens(tokens: list[str], glove_vocab: set | None) -> dict:
         "n_emoji":    n_emoji,
         "n_allcaps":  n_allcaps,
         "n_repeated": n_repeated,
-        "n_oov":      n_oov,   # None when GloVe not loaded
+        "n_oov":      n_oov,
     }
 
 
@@ -126,7 +121,6 @@ def _load_glove_vocab(glove_path: str | Path) -> set[str] | None:
 
 
 # ── Main API ───────────────────────────────────────────────────────────────────
-
 def add_informality_score(
     df: pd.DataFrame,
     glove_path: str | Path | None = None,
@@ -149,7 +143,6 @@ def add_informality_score(
     -------
     Copy of df with new columns added (original df is not modified).
     """
-    # Resolve GloVe path
     if glove_path is None:
         repo_root  = Path(__file__).parent.parent
         glove_path = repo_root / "data" / "glove.6B.300d.txt"
@@ -171,9 +164,8 @@ def add_informality_score(
         result["n_emoji"]    = [s["n_emoji"]    for s in scores]
         result["n_allcaps"]  = [s["n_allcaps"]  for s in scores]
         result["n_repeated"] = [s["n_repeated"] for s in scores]
-        result["n_oov"]      = [s["n_oov"]      for s in scores]  # None if no GloVe
+        result["n_oov"]      = [s["n_oov"]      for s in scores]
 
-    # Assign tertile bins (equal-count, not equal-width)
     result["informality_bin"] = pd.qcut(
         result["informality_score"],
         q=3,

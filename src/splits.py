@@ -23,19 +23,15 @@ def make_splits() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     df = pd.read_csv(COMBINED)
     print(f"Loaded {len(df):,} rows from {COMBINED.name}")
 
-    # Joint stratify key: label_id x source (8 strata)
     df["_stratum"] = df["label_id"].astype(str) + "_" + df["source"]
 
-    # Step 1: carve out 20% for val+test together (stratified)
     train, temp = train_test_split(
         df, test_size=0.20, stratify=df["_stratum"], random_state=SEED
     )
-    # Step 2: split the 20% evenly into val and test (stratified)
     val, test = train_test_split(
         temp, test_size=0.50, stratify=temp["_stratum"], random_state=SEED
     )
 
-    # Drop the helper column before saving
     for split in (train, val, test):
         split.drop(columns=["_stratum"], inplace=True)
 
@@ -70,7 +66,6 @@ if __name__ == "__main__":
     print_balance("Val",   val)
     print_balance("Test",  test)
 
-    # Sanity check: no overlap between splits (compare on text content)
     train_texts = set(train["text"])
     val_texts   = set(val["text"])
     test_texts  = set(test["text"])

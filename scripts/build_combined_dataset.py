@@ -15,8 +15,8 @@ import html
 from pathlib import Path
 
 HERE          = Path(__file__).parent
-# Raw DEPTWEET CSV — not committed (data-use-agreement restricted, see .gitignore).
-# Place it at data/deptweet_dataset.csv (shared with the team via Discord).
+# Raw DEPTWEET CSV, not committed (data-use-agreement restricted, see .gitignore).
+# Place it at data/deptweet_dataset.csv.
 TWITTER_PATH  = HERE / "data" / "deptweet_dataset.csv"
 REDDIT_PATH   = HERE / "data" / "Reddit_depression_dataset_clean.csv"
 OUT_TWITTER   = HERE / "data" / "twitter_processed.csv"
@@ -30,7 +30,7 @@ LABEL_UNIFY = {"non-depressed": "minimum"}
 LABEL_MAP   = {"minimum": 0, "mild": 1, "moderate": 2, "severe": 3}
 
 # ── Text cleaning ─────────────────────────────────────────────────────────────
-_STANDARD_EMOJI_NAMES = set(emoji.EMOJI_DATA.keys())   # set of ":name:" strings
+_STANDARD_EMOJI_NAMES = set(emoji.EMOJI_DATA.keys())
 
 def _is_standard_emoji_token(token: str) -> bool:
     """Return True if :token: is a recognised standard emoji name."""
@@ -50,17 +50,14 @@ def clean_text(text: str) -> str:
     # Remove :custom_token: patterns that are NOT standard emoji names
     #    (e.g. :ezra:, :chef_kiss: was already converted above if it's real)
     def _remove_non_standard(m):
-        token = m.group(0)          # includes the colons, e.g. ":ezra:"
+        token = m.group(0)
         return token if _is_standard_emoji_token(token) else " "
     text = re.sub(r":[a-zA-Z0-9_\-]+:", _remove_non_standard, text)
 
-    # Remove URLs (t.co, http, www)
     text = re.sub(r"http\S+|www\.\S+", "", text)
 
-    # Anonymise @mentions → @user
     text = re.sub(r"@\w+", "@user", text)
 
-    # Collapse excess whitespace
     text = re.sub(r"\s+", " ", text).strip()
 
     return text
@@ -81,20 +78,16 @@ tw = tw[tw["confidence_score"] >= CONFIDENCE_THRESHOLD].copy()
 print(f"  After confidence filter (>={CONFIDENCE_THRESHOLD}): {len(tw)} rows removed {before - len(tw)}")
 tw = tw.drop(columns=["confidence_score"])
 
-# Unify labels
 tw["label"] = tw["label"].replace(LABEL_UNIFY)
 
-# Add source tag
 tw["source"] = "twitter"
 
-# Clean text
 print("  Cleaning text …")
 tw["text"] = tw["text"].apply(clean_text)
 
-# Remove anything that became too short after cleaning (< 10 chars)
+
 tw = tw[tw["text"].str.len() >= 10]
 
-# Deduplicate
 before = len(tw)
 tw = tw.drop_duplicates(subset=["text"])
 print(f"  Duplicates removed: {before - len(tw)}")
@@ -136,7 +129,7 @@ rd.to_csv(OUT_REDDIT, index=False)
 print(f"Saved: {OUT_REDDIT}\n")
 
 
-CAP_RATIO = 2.0   # minimum class will be at most 2× the mild class
+CAP_RATIO = 2.0
 
 combined_raw = pd.concat([tw, rd], ignore_index=True)
 

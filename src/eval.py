@@ -24,7 +24,6 @@ LABEL_NAMES = ["minimum", "mild", "moderate", "severe"]
 
 
 # ── Bootstrap CI ─────────────────────────────────────────────────────────────
-
 def _bootstrap_macro_f1(
     preds: np.ndarray,
     labels: np.ndarray,
@@ -44,7 +43,6 @@ def _bootstrap_macro_f1(
 
 
 # ── Per-source slice ─────────────────────────────────────────────────────────
-
 def _slice_metrics(preds: np.ndarray, labels: np.ndarray) -> dict:
     return {
         "n": int(len(labels)),
@@ -54,7 +52,6 @@ def _slice_metrics(preds: np.ndarray, labels: np.ndarray) -> dict:
 
 
 # ── Confusion matrix plot ─────────────────────────────────────────────────────
-
 def _save_confusion_matrix(
     preds: np.ndarray,
     labels: np.ndarray,
@@ -62,7 +59,6 @@ def _save_confusion_matrix(
     output_dir: Path,
 ) -> None:
     cm = confusion_matrix(labels, preds, labels=[0, 1, 2, 3])
-    # Normalise row-wise so each cell shows recall
     cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
 
     fig, ax = plt.subplots(figsize=(6, 5))
@@ -82,7 +78,6 @@ def _save_confusion_matrix(
 
 
 # ── Main entry point ─────────────────────────────────────────────────────────
-
 def evaluate(
     preds,
     labels,

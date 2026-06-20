@@ -66,8 +66,8 @@ def load_llm_cot_preds(log_dir: str, prefix: str, n: int) -> np.ndarray:
 
 def mcnemar_exact(correct_a: np.ndarray, correct_b: np.ndarray) -> dict:
     """Exact two-sided McNemar test on the discordant-pair counts."""
-    b = int(np.sum(correct_a & ~correct_b))  # A right, B wrong
-    c = int(np.sum(~correct_a & correct_b))  # A wrong, B right
+    b = int(np.sum(correct_a & ~correct_b))
+    c = int(np.sum(~correct_a & correct_b))
     n = b + c
     p = 1.0 if n == 0 else binomtest(min(b, c), n, 0.5, alternative="two-sided").pvalue
     return {"a_right_b_wrong": b, "a_wrong_b_right": c, "n_discordant": n, "p_value": p}

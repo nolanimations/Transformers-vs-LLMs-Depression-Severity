@@ -84,7 +84,6 @@ ASSUMED_CPU_POWER_W = 65
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-
 def _load_jsonl(path: Path) -> list[dict]:
     records = []
     with open(path, encoding="utf-8") as f:
@@ -129,7 +128,6 @@ def _group_files(model_dir: Path) -> dict:
     for variant, entry in by_variant.items():
         if not entry["candidates"]:
             continue
-        # Canonical = candidate file with the most logged calls
         canonical = max(entry["candidates"], key=lambda p: sum(1 for _ in open(p, encoding="utf-8")))
         others = [p for p in entry["candidates"] if p != canonical]
         grouped[variant] = {
@@ -162,7 +160,6 @@ def _co2_g_per_1k_from_tokens(avg_tokens_per_call: float) -> float:
 
 
 # ── LLM ledger ─────────────────────────────────────────────────────────────────
-
 def build_llm_ledger() -> tuple[pd.DataFrame, float]:
     """
     Returns (per-variant ledger DataFrame, grand_total_cost_usd_across_all_logs).
@@ -176,7 +173,6 @@ def build_llm_ledger() -> tuple[pd.DataFrame, float]:
             log.warning(f"No log directory for {model_key} at {model_dir}")
             continue
 
-        # Grand total includes every logged call (incl. aborted/dev runs and fills)
         for path in model_dir.glob("*.jsonl"):
             for r in _load_jsonl(path):
                 grand_total += float(r.get("cost_usd") or 0.0)
@@ -197,8 +193,6 @@ def build_llm_ledger() -> tuple[pd.DataFrame, float]:
             n_calls    = len(records)
             avg_tokens = (tokens_in + tokens_out) / n_calls if n_calls else 0.0
 
-            # Latency from the canonical file only (fills are re-runs, not
-            # representative of the steady-state call cadence).
             median_latency = _median_latency_s(_load_jsonl(info["canonical"]))
 
             cost_per_1k = (total_cost / n_predictions * 1000) if n_predictions else None
@@ -230,7 +224,6 @@ def _read_macro_f1(run_name: str) -> float | None:
 
 
 # ── Local encoder benchmark ─────────────────────────────────────────────────────
-
 def benchmark_encoders(batch_size: int = 16, max_length: int = 256, n_samples: int = 200) -> pd.DataFrame:
     """
     Time inference for MentalBERT and RoBERTa on a sample of the test set.
@@ -266,7 +259,6 @@ def benchmark_encoders(batch_size: int = 16, max_length: int = 256, n_samples: i
         model = AutoModelForSequenceClassification.from_pretrained(ckpt_dir).to(device)
         model.eval()
 
-        # Warm-up batch (excluded from timing)
         warm = tokenizer(texts[:batch_size], padding=True, truncation=True,
                           max_length=max_length, return_tensors="pt").to(device)
         with torch.no_grad():
@@ -288,9 +280,9 @@ def benchmark_encoders(batch_size: int = 16, max_length: int = 256, n_samples: i
         latency_s = elapsed / len(texts)
         power_w = ASSUMED_GPU_POWER_W if device.type == "cuda" else ASSUMED_CPU_POWER_W
         co2_g_per_1k = (
-            (elapsed / len(texts) * 1000)          # s per 1k predictions
-            / 3600 * power_w / 1000                 # -> kWh per 1k predictions
-            * CARBON_INTENSITY_KG_PER_KWH * 1000    # -> g CO2 per 1k predictions
+            (elapsed / len(texts) * 1000)
+            / 3600 * power_w / 1000
+            * CARBON_INTENSITY_KG_PER_KWH * 1000
         )
 
         rows.append({
@@ -316,7 +308,6 @@ def benchmark_encoders(batch_size: int = 16, max_length: int = 256, n_samples: i
 
 
 # ── Headline H4 table ────────────────────────────────────────────────────────────
-
 def build_headline_table(ledger: pd.DataFrame) -> pd.DataFrame:
     """
     Pick, per model, the prompt variant used as that model's main result
@@ -326,8 +317,6 @@ def build_headline_table(ledger: pd.DataFrame) -> pd.DataFrame:
     headline_rows = []
     for model in ledger["model"].unique():
         sub = ledger[ledger["model"] == model]
-        # Local-inference rows have a single "variant"; LLM rows pick the
-        # best-macro-F1 prompt variant.
         if sub["macro_f1"].notna().any():
             best = sub.loc[sub["macro_f1"].idxmax()]
         else:
@@ -354,7 +343,6 @@ def _to_markdown_table(df: pd.DataFrame, columns: list[str], headers: list[str])
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────────
-
 def main(benchmark: bool = False) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -363,8 +351,6 @@ def main(benchmark: bool = False) -> None:
     if benchmark:
         encoder_ledger = benchmark_encoders()
     else:
-        # Placeholder rows so the table structure is complete even without
-        # running the (slower, GPU-needing) benchmark.
         encoder_ledger = pd.DataFrame([
             {
                 "model": "MentalBERT", "variant": "local_inference (not benchmarked)",
