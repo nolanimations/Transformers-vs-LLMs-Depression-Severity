@@ -14,7 +14,7 @@ import re
 import html
 from pathlib import Path
 
-HERE          = Path(__file__).parent
+HERE          = Path(__file__).resolve().parent.parent  # repo root (script lives in scripts/)
 # Raw DEPTWEET CSV, not committed (data-use-agreement restricted, see .gitignore).
 # Place it at data/deptweet_dataset.csv.
 TWITTER_PATH  = HERE / "data" / "deptweet_dataset.csv"
