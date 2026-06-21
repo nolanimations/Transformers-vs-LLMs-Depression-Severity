@@ -10,7 +10,7 @@ post_id,true_label,pred_label,explanation_id,faithfulness,clinical_relevance,act
 3,minimum,minimum,CoT_B,5,5,3
 4,minimum,minimum,SHAP,4,3,2
 4,minimum,minimum,CoT_A,1,1,1
-4,minimum,minimum,CoT_B,5,5,
+4,minimum,minimum,CoT_B,5,5,4
 5,minimum,minimum,SHAP,3,2,3
 5,minimum,minimum,CoT_A,5,5,4
 5,minimum,minimum,CoT_B,5,5,5
