@@ -41,8 +41,8 @@ post_id,true_label,pred_label,explanation_id,faithfulness,clinical_relevance,act
 14,mild,mild,SHAP,5,2,3
 14,mild,mild,CoT_A,5,2,2
 14,mild,mild,CoT_B,3,3,5
-315,mild,minimum,SHAP,3,3,2
-4145,mild,minimum,CoT_A,4,2,2
+15,mild,minimum,SHAP,3,3,2
+15,mild,minimum,CoT_A,4,2,2
 15,mild,minimum,CoT_B,3,3,2
 16,mild,moderate,SHAP,4,3,3
 16,mild,moderate,CoT_A,3,2,2
@@ -80,7 +80,7 @@ post_id,true_label,pred_label,explanation_id,faithfulness,clinical_relevance,act
 27,severe,severe,SHAP,5,3,5
 27,severe,severe,CoT_A,2,2,3
 27,severe,severe,CoT_B,5,5,5
-28,severe,severe,SHAP,5,3,15
+28,severe,severe,SHAP,5,3,5
 28,severe,severe,CoT_A,1,1,1
 28,severe,severe,CoT_B,4,4,3
 29,severe,severe,SHAP,5,3,4
