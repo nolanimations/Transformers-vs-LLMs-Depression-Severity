@@ -56,7 +56,6 @@ Capstone-Group-3/
 │   ├── 04_results_aggregation.ipynb
 │   └── 05_error_analysis.ipynb
 ├── results/                       # metrics, logs, figures (see Data & artifacts)
-├── paper/                         # LaTeX manuscript + figures
 ├── environment.yml                # conda env (GPU machines)
 ├── environment-cpu.yml            # conda env (no GPU)
 └── requirements.txt               # pip alternative (CPU PyTorch)
