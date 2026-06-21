@@ -26,7 +26,7 @@ prompt templates across both LLMs. Five models are compared:
 ## Repository structure
 
 ```
-Capstone-Group-3/
+Transformers-vs-LLMs-Depression-Severity/
 ├── scripts/
 │   ├── clean_reddit.py            # stage 1: raw Reddit text cleanup
 │   └── build_combined_dataset.py  # stage 2: merge + filter → combined_dataset.csv
